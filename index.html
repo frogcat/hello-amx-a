@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>hello-amx-a</title>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0" />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" />
+    <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/pmtiles@2.5.0/dist/index.js"></script>
+    <style>
+      .fude-popup table {
+        font-size: 12px;
+        border-collapse: collapse;
+      }
+      .fude-popup table tr:nth-child(odd) {
+        background: #ddd;
+      }
+      .fude-popup table th {
+        text-align: left;
+        padding: 0 0.5em;
+      }
+      .fude-popup table td {
+        text-align: left;
+        padding: 0 0.5em;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map" style="position: absolute; top: 0; left: 0; bottom: 0; right: 0"></div>
+    <script>
+      const style = {
+        version: 8,
+        glyphs: "https://gsi-cyberjapan.github.io/optimal_bvmap/glyphs/{fontstack}/{range}.pbf",
+        sources: {
+          pale: {
+            type: "raster",
+            tiles: ["https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"],
+            minzoom: 5,
+            maxzoom: 18,
+            tileSize: 256,
+            attribution: "<a href='https://maps.gsi.go.jp/development/ichiran.html'>地理院タイル</a>",
+          },
+          a: {
+            type: "vector",
+            minzoom: 2,
+            maxzoom: 16,
+            url: "pmtiles://https://x.optgeo.org/ipfs/QmTZHWMAnRC5zNiNvdVuTDacThKkj4jKbwsZtKQkAC4R69",
+            attribution:
+              "<a href='https://front.geospatial.jp/houmu-chiseki/'>法務省登記所備付地図データ</a>" +
+              " distributed by " +
+              "<a href='https://github.com/amx-project'>法務省地図XMLアダプトプロジェクト</a>",
+          },
+        },
+        layers: [
+          {
+            id: "pale",
+            type: "raster",
+            source: "pale",
+            minzoom: 5,
+            maxzoom: 24,
+          },
+          {
+            id: "fude-fill",
+            type: "fill",
+            source: "a",
+            "source-layer": "fude",
+            paint: {
+              "fill-color": "black",
+              "fill-opacity": 0.5,
+            },
+          },
+          {
+            id: "fude-line",
+            type: "line",
+            source: "a",
+            "source-layer": "fude",
+            paint: {
+              "line-color": "orange",
+              "line-width": 1.5,
+            },
+          },
+          {
+            id: "fude-caption",
+            type: "symbol",
+            source: "a",
+            "source-layer": "fude",
+            layout: {
+              "text-field": ["format", ["get", "地番"], { "font-scale": 1.0 }],
+              "text-anchor": "center",
+              "text-font": ["NotoSansJP-Regular"],
+              "text-size": 12,
+            },
+            paint: { "text-color": "white" },
+          },
+        ],
+      };
+
+      maplibregl.addProtocol("pmtiles", new pmtiles.Protocol().tile);
+
+      const map = new maplibregl.Map({
+        container: "map",
+        center: [139.693909, 35.686302],
+        hash: true,
+        zoom: 16,
+        pitch: 60,
+        bearing: 22,
+        style: style,
+        customAttribution: "<a href='https://github.com/frogcat/hello-amx-a'>hello-amx-a by frogcat</a>",
+      });
+
+      map.on("load", () => {
+        map.on("mouseenter", "fude-fill", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "fude-fill", () => {
+          map.getCanvas().style.cursor = "default";
+        });
+        map.on("click", "fude-fill", (e) => {
+          const f = e.features[0];
+          if (!f) return;
+          const rows = Object.entries(f.properties).map((x) => `<tr><th>${x[0]}</th><td>${x[1]}</td></tr>`);
+          new maplibregl.Popup({
+            className: "fude-popup",
+            maxWidth: "480px",
+            closeOnMove: true,
+          })
+            .setLngLat(e.lngLat)
+            .setHTML(`<table>${rows.join("")}</table>`)
+            .addTo(map);
+        });
+      });
+    </script>
+  </body>
+</html>
