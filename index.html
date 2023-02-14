@@ -119,7 +119,7 @@
         customAttribution: "<a href='https://github.com/frogcat/hello-amx-a'>hello-amx-a by frogcat</a>",
       });
 
-      map.on("load", () => {
+      (function () {
         const popup = new maplibregl.Popup({
           className: "fude-popup",
           maxWidth: "480px",
@@ -134,12 +134,13 @@
           });
           popup.remove();
         });
-
+        map.on("mouseenter", "fude-fill", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
         let prev = null;
         map.on("mousemove", "fude-fill", (e) => {
           const f = e.features[0];
           if (!f) return;
-          map.getCanvas().style.cursor = "pointer";
           const filter = ["all"];
           for (const [k, v] of Object.entries(f.properties)) {
             filter.push(["==", ["get", k], v]);
@@ -167,7 +168,7 @@
           table.push("</table>");
           popup.setLngLat(e.lngLat).setHTML(table.join("")).addTo(map);
         });
-      });
+      })();
     </script>
   </body>
 </html>
